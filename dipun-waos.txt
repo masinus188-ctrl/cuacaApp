@@ -1,0 +1,215 @@
+A. TENTANG APLIKASI
+
+1. Aplikasi ini menampilkan suhu udara per jam untuk empat lokasi, yaitu Jakarta, Pangkalan Bun, Semarang, dan Palangkaraya.
+2. Pengguna dapat memilih lokasi dan tanggal, melihat grafik suhu harian, melihat suhu pada jam tertentu dengan mengarahkan kursor ke grafik, serta berpindah ke hari sebelumnya atau berikutnya.
+3. Tampilan dibuat dengan Vue 3 dan CSS. Data suhu diambil dari layanan Open-Meteo.
+4. Penjelasan ini dibuat berdasarkan file proyek yang ada, supaya fungsi setiap bagian kode lebih mudah dipahami.
+
+B. CARA MENJALANKAN
+
+1. Buka folder proyek menggunakan Visual Studio Code.
+2. Pastikan ekstensi Live Server sudah terpasang.
+3. Buka file index.html, lalu tekan tombol Go Live di bagian bawah jendela VS Code.
+4. Biarkan koneksi internet tetap aktif karena aplikasi mengambil Vue dari CDN dan meminta data cuaca dari Open-Meteo.
+5. Setelah halaman terbuka, pilih lokasi dan tanggal. Tombol Muat ulang dapat digunakan untuk meminta data lagi.
+
+C. PENJELASAN FILE
+
+1. index.html
+
+   File ini menjadi halaman awal aplikasi.
+
+   1. <!DOCTYPE html> memberi tahu browser bahwa halaman menggunakan standar HTML modern.
+   2. <html lang="id"> menandai bahwa bahasa utama halaman adalah Bahasa Indonesia.
+   3. Pengaturan charset UTF-8 membantu browser menampilkan karakter seperti derajat Celsius dan huruf Bahasa Indonesia dengan benar.
+   4. Pengaturan viewport membuat halaman menyesuaikan ukuran layar ponsel dan komputer.
+   5. Elemen title mengatur nama yang terlihat pada tab browser.
+   6. Link ke style.css menghubungkan halaman dengan aturan tampilan.
+   7. Elemen dengan id app adalah tempat Vue memasang tampilan aplikasinya.
+   8. Atribut v-cloak menyembunyikan elemen aplikasi sampai Vue selesai memuatnya.
+   9. Vue 3 dimuat dari CDN. Setelah itu WeatherTable.js dimuat sebelum app.js karena app.js mendaftarkan dan menggunakan komponen WeatherTable.
+
+2. js/app.js
+
+   File ini mengatur data utama, tampilan kontrol, tanggal, permintaan API, serta hubungan dengan grafik.
+
+   1. Baris awal mengambil fungsi Vue yang diperlukan:
+      a. createApp membuat dan menjalankan aplikasi Vue.
+      b. ref membuat nilai reaktif sederhana, misalnya lokasi pilihan dan status loading.
+      c. computed menghitung nilai berdasarkan data lain, misalnya lokasi yang sedang dipilih.
+      d. watch menjalankan tindakan saat nilai tertentu berubah.
+      e. onMounted menjalankan fungsi setelah aplikasi dipasang ke halaman.
+
+   2. KOTA adalah daftar lokasi yang tersedia.
+      a. id adalah nilai unik untuk setiap lokasi.
+      b. name adalah nama yang ditampilkan kepada pengguna.
+      c. lat dan lon adalah koordinat lintang dan bujur yang dikirim ke Open-Meteo.
+
+   3. HARI dan BULAN adalah daftar nama hari dan singkatan bulan dalam Bahasa Indonesia. Daftar ini dipakai untuk membuat label tanggal grafik.
+
+   4. shiftDate(date, offset)
+      a. Menerima tanggal dalam format tahun-bulan-tanggal dan jumlah hari yang ingin ditambahkan atau dikurangi.
+      b. Membuat objek Date pada waktu UTC, lalu mengubah tanggalnya.
+      c. Mengembalikan tanggal dalam format YYYY-MM-DD.
+      d. Fungsi ini digunakan untuk menghitung rentang permintaan data dan batas tanggal maksimum.
+
+   5. todayWIB()
+      a. Membaca tanggal saat ini menggunakan zona waktu Asia/Jakarta.
+      b. Intl.DateTimeFormat mengubah tanggal menjadi bagian tahun, bulan, dan hari.
+      c. Bagian tersebut disusun kembali menjadi format YYYY-MM-DD.
+      d. Fungsi ini membuat tanggal aplikasi mengikuti WIB, bukan zona waktu komputer pengguna.
+
+   6. buildUrl(kota, startDate, endDate, archive)
+      a. Membuat alamat URL untuk permintaan data Open-Meteo.
+      b. Jika archive bernilai true, alamat yang dipakai adalah layanan arsip. Jika tidak, alamat layanan prakiraan yang dipakai.
+      c. Koordinat kota, variabel hourly temperature_2m, zona waktu Asia/Jakarta, start_date, dan end_date dimasukkan ke alamat URL.
+
+   7. parseTime(iso)
+      a. Menerima waktu dari API, contohnya tanggal dan jam yang dipisahkan huruf T.
+      b. Memisahkan tanggal dan jam.
+      c. Mengubah bagian tanggal menjadi nama hari dan label seperti Senin, 28 Okt 2026.
+      d. Mengembalikan date, jam, dan label untuk dipakai pada grafik.
+
+   8. formatSuhu(n)
+      a. Membatasi angka suhu menjadi satu angka di belakang koma.
+      b. Mengganti tanda desimal titik menjadi koma agar sesuai format yang umum dipakai di Indonesia.
+      c. Menambahkan satuan °C.
+
+   9. createApp(...)
+      a. Membuat aplikasi Vue utama.
+      b. Mendaftarkan WeatherTable agar komponen grafik dapat dipakai di template.
+      c. Template di dalamnya membentuk judul, pilihan lokasi, pemilih tanggal, tombol muat ulang, pesan status, grafik, dan label WIB.
+
+   10. Isi template aplikasi
+       a. v-model menghubungkan pilihan lokasi dan tanggal dengan nilai reaktif di setup().
+       b. v-for membuat pilihan lokasi dari daftar KOTA.
+       c. :min dan :max membatasi tanggal yang dapat dipilih.
+       d. :disabled menonaktifkan tombol muat ulang saat data sedang diminta.
+       e. v-if dan v-else-if memilih tampilan loading, pesan error, atau grafik sesuai kondisi.
+       f. Props dengan awalan titik dua dikirim dari aplikasi ke WeatherTable.
+       g. @select-day menerima peristiwa dari grafik dan memanggil fungsi selectDate.
+
+   11. setup()
+       a. data menyimpan baris data suhu yang diterima dari API.
+       b. loading menyatakan apakah permintaan data sedang berlangsung.
+       c. error menyimpan pesan jika permintaan data gagal.
+       d. selectedCity menyimpan ID lokasi pilihan, dengan Jakarta sebagai pilihan awal.
+       e. selectedDate menyimpan tanggal pilihan, dengan tanggal hari ini di WIB sebagai nilai awal.
+       f. kota mencari informasi lengkap lokasi berdasarkan selectedCity.
+       g. minimumDate adalah batas tanggal paling awal yang dapat dipilih.
+       h. maximumDate dihitung sebagai sembilan hari setelah tanggal hari ini di WIB.
+       i. selectedDay menyediakan tanggal pilihan untuk komponen grafik.
+
+   12. loadData()
+       a. Menambah requestId setiap kali permintaan baru dimulai.
+       b. Mengaktifkan loading dan mengosongkan pesan error lama.
+       c. Menghitung rentang data dari dua hari sebelum hingga tujuh hari setelah tanggal pilihan.
+       d. Jika rentang mencakup tanggal lampau, fungsi meminta bagian tersebut dari layanan arsip.
+       e. Jika rentang mencakup hari ini atau tanggal mendatang, fungsi meminta bagian tersebut dari layanan prakiraan.
+       f. Promise.all menunggu semua permintaan selesai. Setelah itu, status HTTP diperiksa; respons yang gagal akan menghasilkan pesan error.
+       g. Data hourly.time dan hourly.temperature_2m dipasangkan menjadi baris waktu dan suhu, lalu parseTime menambahkan tanggal, jam, dan label.
+       h. Jika permintaan gagal, pesan disimpan di error dan data dikosongkan.
+       i. requestId mencegah hasil permintaan lama menggantikan hasil dari permintaan terbaru.
+       j. Bagian finally mematikan loading hanya untuk permintaan yang paling baru.
+
+   13. Pengamat dan fungsi tanggal
+       a. onMounted(loadData) meminta data saat aplikasi pertama kali dibuka.
+       b. watch(selectedCity, ...) memperbarui data saat lokasi berubah. Jika tanggal sebelumnya bukan hari ini, tanggal pilihan dikembalikan ke hari ini.
+       c. watch(selectedDate, ...) meminta data lagi ketika tanggal berubah dan masih dalam batas yang diizinkan.
+       d. selectDate(date) menerima tanggal dari tombol navigasi grafik dan mengubah pilihan jika tanggal tersebut masih dalam batas.
+
+   14. Nilai hasil perhitungan
+       a. visibleRows menyaring data agar grafik hanya menerima baris untuk tanggal yang dipilih.
+       b. stats menghitung suhu terendah, tertinggi, dan rata-rata dari data yang sudah dimuat. Nilai ini juga dipakai untuk mengetahui apakah data tersedia sebelum grafik ditampilkan.
+       c. Nilai dan fungsi yang dikembalikan setup() dapat digunakan oleh template Vue.
+
+3. js/WeatherTable.js
+
+   File ini berisi komponen Vue untuk membuat grafik suhu dan tombol pindah tanggal.
+
+   1. props adalah data yang diterima dari app.js.
+      a. rows berisi data suhu per jam untuk tanggal yang sedang ditampilkan.
+      b. selectedDay adalah tanggal yang saat ini dipilih.
+      c. minimumDate dan maximumDate membatasi perpindahan tanggal.
+
+   2. setup(props, { emit })
+      a. props digunakan untuk membaca data masukan dari app.js.
+      b. emit digunakan untuk mengirim peristiwa kembali ke app.js.
+      c. hoveredPoint menyimpan titik grafik yang paling dekat dengan posisi kursor.
+      d. formatSuhu mengubah nilai suhu menjadi teks dengan satu angka desimal dan satuan °C.
+
+   3. showTemperature(event)
+      a. Membaca ukuran dan posisi area grafik di halaman.
+      b. Mengubah posisi horizontal kursor menjadi koordinat pada grafik SVG yang lebarnya 760 satuan.
+      c. Mencari titik data yang paling dekat dengan posisi tersebut.
+      d. Menyimpan titik itu ke hoveredPoint agar garis bantu, titik, dan tooltip ditampilkan.
+
+   4. hideTemperature()
+      Mengosongkan hoveredPoint saat kursor keluar dari area grafik sehingga tooltip menghilang.
+
+   5. shiftSelectedDay(offset)
+      a. Membuat tanggal baru dari selectedDay.
+      b. Menggeser tanggal satu hari ke depan atau ke belakang menggunakan UTC.
+      c. Menghentikan proses jika tanggal baru melewati batas.
+      d. Mengosongkan tooltip dan mengirim peristiwa select-day beserta tanggal baru ke app.js.
+
+   6. canGoPrevious dan canGoNext
+      Nilai computed ini memeriksa apakah tanggal saat ini masih dapat digeser ke hari sebelumnya atau selanjutnya. Hasilnya dipakai untuk mengaktifkan atau menonaktifkan tombol.
+
+   7. chartData
+      a. Jika tidak ada baris data, fungsi mengembalikan struktur grafik kosong.
+      b. Menghitung suhu minimum dan maksimum dari rows.
+      c. Mengubah setiap suhu menjadi titik koordinat x dan y pada area SVG. Jarak horizontal dibagi merata, sedangkan posisi vertikal berdasarkan nilai suhu.
+      d. Membuat jalur grafik dengan kurva cubic Bezier supaya garis terlihat lebih halus.
+      e. Membuat bentuk area di bawah garis untuk diberi warna gradasi.
+      f. Memilih sejumlah label jam agar label tidak terlalu rapat, serta selalu menyertakan jam terakhir.
+      g. Menemukan titik suhu terendah dan tertinggi. Titik terendah diberi warna biru dan titik tertinggi diberi warna merah.
+      h. Mengembalikan jalur garis, area, label, titik ekstrem, semua titik data, dan nilai suhu minimum serta maksimum.
+
+   8. Template grafik
+      a. Bagian kepala menampilkan tanggal serta rentang suhu minimum dan maksimum.
+      b. Elemen SVG menggambar garis bantu, area gradasi, kurva suhu, titik ekstrem, dan titik kursor.
+      c. Tooltip menampilkan jam dan suhu dari titik yang sedang dipilih kursor.
+      d. Label jam ditampilkan di bawah grafik.
+      e. Tombol Hari sebelumnya dan Hari selanjutnya memanggil shiftSelectedDay.
+      f. Atribut aria-label dan role membantu memberi keterangan untuk pembaca layar.
+
+4. style.css
+
+   File ini mengatur warna, jarak, ukuran, dan tata letak halaman.
+
+   1. :root menyimpan warna dan bayangan dalam variabel CSS agar warna yang dipakai berulang lebih mudah diatur.
+   2. Aturan * menggunakan box-sizing border-box supaya ukuran elemen lebih mudah dihitung.
+   3. Aturan html, body, dan body mengatur margin, tinggi minimum, latar gradasi, warna teks, font, dan jarak baris.
+   4. :focus-visible memberi garis fokus ketika elemen digunakan dengan keyboard.
+   5. [v-cloak] menyembunyikan tampilan Vue sebelum proses pemuatan selesai.
+   6. #app dan .app-shell mengatur lebar, jarak tepi, panel utama, sudut, dan bayangan aplikasi.
+   7. .topbar, .title-wrap, dan .subtitle mengatur posisi serta ukuran judul dan keterangan.
+   8. .toolbar, .field, select, input, dan button mengatur tampilan pilihan lokasi, tanggal, dan tombol muat ulang.
+   9. .status dan .status.error mengatur pesan pemuatan dan pesan kesalahan.
+   10. .chart-card, .chart-header, .chart-summary, dan .eyebrow mengatur panel grafik serta judul ringkasannya.
+   11. .chart-wrap dan .chart-grid mengatur area grafik serta garis bantu SVG.
+   12. .chart-tooltip mengatur tampilan kotak informasi suhu saat grafik diarahkan kursor.
+   13. .chart-labels dan .chart-extreme-label mengatur label waktu dan label titik suhu ekstrem.
+   14. .chart-navigation dan .chart-nav-button mengatur posisi serta tampilan tombol pindah hari yang tidak menggunakan border.
+   15. Media query dengan batas 760 piksel dan 480 piksel mengubah jarak dan ukuran komponen agar lebih sesuai di tablet dan ponsel.
+
+D. ALUR DATA APLIKASI
+
+1. Browser membuka index.html, memuat style.css, Vue, WeatherTable.js, dan app.js secara berurutan.
+2. Vue memasang aplikasi pada elemen dengan id app, lalu onMounted menjalankan loadData().
+3. app.js menentukan lokasi, tanggal, serta rentang tanggal yang diminta.
+4. Permintaan dikirim ke Open-Meteo. Data lampau menggunakan API arsip, sedangkan data hari ini dan masa depan menggunakan API prakiraan.
+5. Hasil API diubah menjadi baris berisi waktu, suhu, tanggal, jam, dan label hari.
+6. visibleRows memilih data untuk tanggal yang sedang dipilih, kemudian baris tersebut dikirim ke WeatherTable.
+7. WeatherTable menghitung koordinat grafik dan menampilkannya dalam bentuk SVG.
+8. Saat tombol navigasi ditekan, WeatherTable mengirim tanggal baru ke app.js. Perubahan tanggal membuat data diminta kembali.
+
+E. SUMBER DATA DAN ISTILAH
+
+1. Sumber suhu: Open-Meteo.
+2. Data yang diminta: temperature_2m, yaitu suhu udara pada ketinggian dua meter.
+3. Zona waktu permintaan data: Asia/Jakarta atau WIB.
+4. API arsip digunakan untuk tanggal lampau, dan API prakiraan digunakan untuk tanggal hari ini maupun mendatang.
+5. CDN adalah layanan untuk memuat pustaka dari internet. Dalam proyek ini, Vue 3 dimuat dari CDN sehingga tidak memerlukan proses instalasi atau build.
+6. API adalah cara bagi aplikasi untuk meminta data dari layanan lain. Pada proyek ini, browser meminta data cuaca dari Open-Meteo.
